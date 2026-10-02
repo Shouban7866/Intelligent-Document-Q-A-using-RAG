@@ -1,0 +1,495 @@
+# 📚 Intelligent Document Q&A using RAG
+
+An end-to-end **Retrieval-Augmented Generation (RAG)** application that allows users to upload a PDF or TXT document and ask questions about its content.
+
+The system retrieves relevant information using **semantic similarity search + BM25 hybrid retrieval**, combines the results using **Reciprocal Rank Fusion (RRF)**, reranks the retrieved documents using **Cohere**, and generates a grounded answer using **Groq LLM**.
+
+---
+
+## 🚀 Features
+
+* 📄 PDF and TXT document upload
+* ✂️ Recursive Character Text Splitting
+* 🔢 Mistral embeddings
+* 🗄️ Pinecone vector database
+* 🔍 Semantic similarity search
+* 🔎 BM25 keyword search
+* 🔀 Reciprocal Rank Fusion (RRF)
+* 🎯 Cohere reranking
+* 🔄 Query rewriting
+* 🤖 Groq LLM for answer generation
+* 🚫 Reduces hallucination using document-grounded prompting
+* ⚡ FastAPI backend
+* 🖥️ Streamlit frontend
+* 💬 Chat-style user interface
+
+---
+
+## 🏗️ Architecture
+
+```text
+                  PDF / TXT
+                      │
+                      ▼
+               Document Loader
+                      │
+                      ▼
+              Recursive Chunking
+                      │
+                      ▼
+             Mistral Embeddings
+                      │
+                      ▼
+                  Pinecone
+                      │
+                      │
+              User Question
+                      │
+                      ▼
+                Query Rewriting
+                      │
+              ┌───────┴────────┐
+              ▼                ▼
+       Similarity Search      BM25
+              │                │
+              └───────┬────────┘
+                      ▼
+                     RRF
+                      │
+                      ▼
+              Cohere Reranker
+                      │
+                      ▼
+             Top Relevant Chunks
+                      │
+                      ▼
+                 Groq LLM
+                      │
+                      ▼
+                Final Answer
+```
+
+---
+
+## 🧠 How It Works
+
+### 1. Document Upload
+
+The user uploads a PDF or TXT file through the Streamlit interface.
+
+The FastAPI backend receives and stores the document locally.
+
+### 2. Document Loading
+
+For PDF files, the application uses `PyPDFLoader`.
+
+For TXT files, it uses `TextLoader`.
+
+### 3. Chunking
+
+Large documents are divided into smaller chunks using:
+
+```python
+RecursiveCharacterTextSplitter(
+    chunk_size=800,
+    chunk_overlap=100
+)
+```
+
+Chunking allows the retrieval system to search smaller and more relevant sections of the document.
+
+### 4. Embeddings
+
+The document chunks are converted into numerical vectors using:
+
+```text
+Mistral Embeddings
+```
+
+These embeddings represent the semantic meaning of the text.
+
+### 5. Vector Database
+
+The embeddings are stored in:
+
+```text
+Pinecone
+```
+
+Pinecone is used for semantic similarity retrieval.
+
+### 6. Query Rewriting
+
+Before retrieval, the user's question is rewritten into a clearer search query.
+
+For example:
+
+```text
+User:
+"What are its symptoms?"
+```
+
+The query rewriting step can convert it into a more specific retrieval query based on the user's question.
+
+The rewritten query is used for retrieval, while the original question is used for final answer generation.
+
+### 7. Hybrid Retrieval
+
+The system uses two retrieval methods:
+
+#### Semantic Similarity Search
+
+Pinecone retrieves documents based on semantic similarity.
+
+#### BM25
+
+BM25 retrieves documents based on keyword matching.
+
+Using both methods helps handle both:
+
+* semantic/contextual queries
+* exact keyword queries
+
+### 8. Reciprocal Rank Fusion
+
+The results from similarity search and BM25 are combined using **Reciprocal Rank Fusion (RRF)**.
+
+RRF combines the rankings from both retrieval methods into a single ranked list.
+
+### 9. Cohere Reranking
+
+The fused documents are passed to the Cohere reranker.
+
+The reranker evaluates the relevance of each retrieved document against the query and returns the most relevant chunks.
+
+### 10. Answer Generation
+
+The top retrieved chunks are provided to the Groq LLM.
+
+The prompt instructs the model to answer using only the retrieved document context.
+
+If the information is not present in the document, the system responds:
+
+```text
+I could not find the answer in the uploaded document.
+```
+
+This helps reduce hallucination.
+
+---
+
+## 🛠️ Tech Stack
+
+| Technology | Purpose                          |
+| ---------- | -------------------------------- |
+| Python     | Main programming language        |
+| LangChain  | RAG components and orchestration |
+| Groq       | LLM inference                    |
+| Mistral AI | Text embeddings                  |
+| Pinecone   | Vector database                  |
+| BM25       | Keyword retrieval                |
+| Cohere     | Document reranking               |
+| FastAPI    | Backend API                      |
+| Streamlit  | Frontend                         |
+| PyPDF      | PDF document loading             |
+
+---
+
+## 📁 Project Structure
+
+```text
+document-qa-rag/
+│
+├── main.py
+├── backend.py
+├── frontend.py
+├── requirements.txt
+├── .env
+├── .gitignore
+│
+└── uploads/
+```
+
+### `main.py`
+
+Contains the main RAG pipeline:
+
+* document loading
+* chunking
+* embeddings
+* Pinecone
+* BM25
+* query rewriting
+* RRF
+* Cohere reranking
+* LLM prompt
+
+### `backend.py`
+
+Contains the FastAPI backend:
+
+* file upload API
+* question-answering API
+
+### `frontend.py`
+
+Contains the Streamlit interface:
+
+* document upload
+* chat interface
+* displaying answers
+
+---
+
+## 🔑 Environment Variables
+
+Create a `.env` file in the project root:
+
+```env
+GROQ_API_KEY=your_groq_api_key
+MISTRAL_API_KEY=your_mistral_api_key
+PINECONE_API_KEY=your_pinecone_api_key
+COHERE_API_KEY=your_cohere_api_key
+```
+
+Never commit your `.env` file to GitHub.
+
+---
+
+## 📦 Installation
+
+Clone the repository:
+
+```bash
+git clone https://github.com/your-username/document-qa-rag.git
+```
+
+Move into the project:
+
+```bash
+cd document-qa-rag
+```
+
+Create a virtual environment:
+
+```bash
+python -m venv .venv
+```
+
+Activate it on Windows:
+
+```bash
+.venv\Scripts\activate
+```
+
+Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+---
+
+## ▶️ Running the Application
+
+### Step 1 — Start FastAPI
+
+```bash
+uvicorn backend:app --reload
+```
+
+The API will run at:
+
+```text
+http://127.0.0.1:8000
+```
+
+FastAPI documentation:
+
+```text
+http://127.0.0.1:8000/docs
+```
+
+### Step 2 — Start Streamlit
+
+Open another terminal:
+
+```bash
+streamlit run frontend.py
+```
+
+Streamlit will open the application in your browser.
+
+---
+
+## 🔄 Example Workflow
+
+### Upload
+
+Upload:
+
+```text
+machine_learning.pdf
+```
+
+### Ask
+
+```text
+What is supervised learning?
+```
+
+### Retrieval
+
+```text
+Query Rewriting
+       ↓
+Similarity Search
+       +
+BM25
+       ↓
+RRF
+       ↓
+Cohere Reranking
+```
+
+### Generation
+
+The most relevant chunks are passed to the Groq LLM.
+
+### Response
+
+The application generates an answer based on the uploaded document.
+
+---
+
+## 🎯 Why Hybrid Retrieval?
+
+A single retrieval method may not perform equally well for every query.
+
+Semantic search is useful when the user asks a question using different wording from the document.
+
+BM25 is useful when the query contains exact keywords, technical terms, names, or phrases.
+
+Therefore, this project combines:
+
+```text
+Semantic Search
+       +
+BM25
+       ↓
+RRF
+       ↓
+Cohere Reranking
+```
+
+---
+
+## 🔀 Why RRF?
+
+**Reciprocal Rank Fusion** combines results from multiple retrieval systems.
+
+Instead of depending completely on one retriever, RRF combines their rankings to produce a unified result list.
+
+---
+
+## 🎯 Why Reranking?
+
+Initial retrieval can return several potentially relevant chunks.
+
+Cohere reranking performs another relevance check and selects the most relevant chunks before sending them to the LLM.
+
+This helps provide better context to the generation model.
+
+---
+
+## 🔄 Why Query Rewriting?
+
+Users do not always ask questions in a retrieval-friendly way.
+
+For example:
+
+```text
+"What about its symptoms?"
+```
+
+Query rewriting converts the question into a clearer search query before retrieval.
+
+This can improve retrieval for short or ambiguous questions.
+
+---
+
+## 🛡️ Hallucination Control
+
+The system uses a grounded prompt:
+
+```text
+Answer the user's question using ONLY the information
+provided in the document context.
+```
+
+If the retrieved context does not contain the answer, the model is instructed to respond:
+
+```text
+I could not find the answer in the uploaded document.
+```
+
+The system therefore follows a **retrieval-first, context-grounded** approach instead of asking the LLM to answer from general knowledge.
+
+---
+
+## 📌 Future Improvements
+
+Possible future improvements include:
+
+* Multi-file document management
+* Conversation memory
+* User authentication
+* Persistent BM25 index
+* Source citations
+* Page-level references
+* Better error handling
+* Streaming responses
+* Document deletion
+* Cloud deployment
+* Docker support
+* PostgreSQL integration
+* Agentic document workflows
+
+---
+
+## 👨‍💻 Author
+
+**Shouban Malik**
+
+AI/ML Engineer | Python | Machine Learning | RAG | LangChain | LangGraph | FastAPI
+
+GitHub: `https://github.com/Shouban7866`
+
+LinkedIn: `https://www.linkedin.com/in/shouban-malik-9041a3340/`
+
+---
+
+## ⭐ Project Highlights
+
+This project demonstrates practical implementation of:
+
+```text
+RAG
+│
+├── Document Loading
+├── Chunking
+├── Embeddings
+├── Vector Database
+├── Similarity Search
+├── BM25
+├── Hybrid Retrieval
+├── RRF
+├── Query Rewriting
+├── Reranking
+├── Prompt Engineering
+├── LLM Generation
+├── FastAPI
+└── Streamlit
+```
+
+The project is designed as an end-to-end RAG application rather than a basic chatbot.
